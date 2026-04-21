@@ -17,6 +17,9 @@ try:
                     database="expenseTracker")
     cur = con.cursor()
     cur.execute("create table if not exists expenses(Id int auto_increment primary key, Date timestamp default current_timestamp, Food int default 0, Travel int default 0, Others int default 0, Total int as (food+travel+others))")
+    cur.execute("CREATE TABLE IF NOT EXISTS account (id INT PRIMARY KEY, balance INT)")
+    cur.execute("INSERT IGNORE INTO account (id, balance) VALUES (1, 7433)")
+    con.commit()
 
 except Exception as e:
     print(f"Error: {e}. Check SQL")
@@ -27,7 +30,11 @@ class App(ctk.CTk):
         super().__init__()
         self.geometry("400x350")
         self.title("Expense Tracker")
-        self.total_balance = 8723
+        
+        cur.execute("SELECT balance FROM account WHERE id = 1")
+        result = cur.fetchone()
+        self.total_balance = result[0] if result else 0
+
         self.setup_ui()
         
 
@@ -123,6 +130,10 @@ class App(ctk.CTk):
             con.commit()
 
             self.total_balance -= (f+t+o)
+
+            cur.execute("UPDATE account SET balance = %s WHERE id = 1", (self.total_balance,))
+            con.commit()
+
             self.updateBalance()
             
             self.saveBtn.configure(text="Data Saved!", fg_color="green")
